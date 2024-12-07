@@ -38,43 +38,39 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+// Routing label, indicate the egress port at each switch
+header routing_label_t {
+    bit<8>   egress_spec;
+    bit<1>  bos;
+}
+
 // counter header, indicates how many hops this probe
 // packet has traversed so far.
 header counter_t {
-    bit<8> visited_cnt;
+    bit<8> visited_count;
 }
 
-// The data added to the probe by each switch at each hop.
+// Probe data header, store telemetry data from each hop
+// The data added to the stack by each switch at each hop.
 header probe_data_t {
     bit<1>    bos;
-    bit<7>    swid;
-    bit<8>    port;
-    bit<32>   byte_cnt;
-    time_t    last_time;
-    time_t    cur_time;
+    bit<8>    switch_id;
+    bit<16>   rule_id;
+    bit<16>   in_port;
+    bit<16>   out_port;
 }
 
-// Indicates the egress port the switch should send this probe
-// packet out of. There is one of these headers for each hop.
-header probe_fwd_t {
-    bit<8>   egress_spec;
-}
-
-struct parser_metadata_t {
-    bit<8>  remaining;
-}
 
 struct metadata {
     bit<8> egress_spec;
-    parser_metadata_t parser_metadata;
 }
 
 struct headers {
-    ethernet_t              ethernet;
-    ipv4_t                  ipv4;
-    probe_t                 counter;
-    probe_data_t[MAX_HOPS]  probe_data;
-    probe_fwd_t[MAX_HOPS]   probe_fwd;
+    ethernet_t                  ethernet;
+    routing_label_t[MAX_HOPS]   routing_label_stack;
+    counter_t                   counter;
+    probe_data_t[MAX_HOPS]      probe_data_stack;
+    ipv4_t                      ipv4;
 }
 
 /*************************************************************************
@@ -94,7 +90,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
             TYPE_IPV4: parse_ipv4;
-            TYPE_PROBE: parse_probe;
+            TYPE_PROBE: parse_routing_label;
             default: accept;
         }
     }
@@ -104,33 +100,30 @@ parser MyParser(packet_in packet,
         transition accept;
     }
 
-    state parse_probe {
-        packet.extract(hdr.probe);
-        meta.parser_metadata.remaining = hdr.probe.hop_cnt + 1;
-        transition select(hdr.probe.hop_cnt) {
-            0: parse_probe_fwd;
+    state parse_routing_label {
+        packet.extract(hdr.routing_label_stack.next);
+        transition select(hdr.routing_label_stack.last.bos){
+            1: parse_counter;
+            default: parse_routing_label;
+        }
+    }
+
+    state parse_counter {
+        packet.extract(hdr.counter);
+        transition select(hdr.counter.visited_count) {
+            0: parse_ipv4;
             default: parse_probe_data;
         }
     }
 
     state parse_probe_data {
-        packet.extract(hdr.probe_data.next);
-        transition select(hdr.probe_data.last.bos) {
-            1: parse_probe_fwd;
+        packet.extract(hdr.probe_data_stack.next);
+        transition select(hdr.probe_data_stack.last.bos) {
+            1: parse_ipv4;
             default: parse_probe_data;
         }
     }
 
-    state parse_probe_fwd {
-        packet.extract(hdr.probe_fwd.next);
-        meta.parser_metadata.remaining = meta.parser_metadata.remaining - 1;
-        // extract the forwarding data
-        meta.egress_spec = hdr.probe_fwd.last.egress_spec;
-        transition select(meta.parser_metadata.remaining) {
-            0: accept;
-            default: parse_probe_fwd;
-        }
-    }
 }
 
 /*************************************************************************
