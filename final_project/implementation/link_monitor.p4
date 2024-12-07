@@ -16,7 +16,6 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 
-typedef bit<48> time_t;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -39,10 +38,10 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
-// Top-level probe header, indicates how many hops this probe
+// counter header, indicates how many hops this probe
 // packet has traversed so far.
-header probe_t {
-    bit<8> hop_cnt;
+header counter_t {
+    bit<8> visited_cnt;
 }
 
 // The data added to the probe by each switch at each hop.
@@ -73,7 +72,7 @@ struct metadata {
 struct headers {
     ethernet_t              ethernet;
     ipv4_t                  ipv4;
-    probe_t                 probe;
+    probe_t                 counter;
     probe_data_t[MAX_HOPS]  probe_data;
     probe_fwd_t[MAX_HOPS]   probe_fwd;
 }
