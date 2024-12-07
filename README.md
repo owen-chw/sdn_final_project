@@ -26,7 +26,7 @@
     - bos: bottom of stack, 1 bit
 
 ## datail packet format
-```=c
+```c=
 #define MAX_HOPS 256  
 #define MAX_PORTS 65536 
 
