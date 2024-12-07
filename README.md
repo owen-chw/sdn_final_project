@@ -8,12 +8,18 @@
 ---------------------------------------------------------------------------
 ```
 - `routing_label_stack`: Store source routing label
-  - N * 5 bits
+  - include:
+    - out port: 16 bits
+    - bos: bottom of stacks, 1 bit
+  - total: N * 17 bits
+
 - `visited_count`: Store how many hops the probing packet has visited
-  - 10 bits
+  - 8 bits
+
 - `Probe_data_stack`: Stack to Store telemetry data from each hop
   - include:
-    - switch ID
-    - rule ID
+    - switch ID: 8 bits
+    - rule ID: 16 bits
     - in port: 16 bits
     - out port: 16 bits
+    - bos: bottom of stack, 1 bit
