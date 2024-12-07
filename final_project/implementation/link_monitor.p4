@@ -5,8 +5,8 @@
 const bit<16> TYPE_IPV4  = 0x800;
 const bit<16> TYPE_PROBE = 0x812;
 
-#define MAX_HOPS 10
-#define MAX_PORTS 8
+#define MAX_HOPS 256  
+#define MAX_PORTS 65536 
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
