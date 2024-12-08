@@ -14,8 +14,13 @@ def handle_pkt(pkt):
         data_layers = [l for l in expand(pkt) if l.name=='ProbeData']
         print("")
         for sw in data_layers:
-            utilization = 0 if sw.cur_time == sw.last_time else 8.0*sw.byte_cnt/(sw.cur_time - sw.last_time)
-            print("Switch {} - Port {}: {} Mbps".format(sw.swid, sw.port, utilization))
+            # utilization = 0 if sw.cur_time == sw.last_time else 8.0*sw.byte_cnt/(sw.cur_time - sw.last_time)
+            switch_id = sw.switch_id
+            rule_id = sw.rule_id
+            in_port = sw.in_port
+            out_port = sw.out_port
+            # print("Switch {} - Port {}: {} Mbps".format(sw.swid, sw.port, utilization))
+            print("Switch {} - Rule {}: In Port {} Out Port {}".format(switch_id, rule_id, in_port, out_port))
 
 def main():
     iface = 'eth0'
