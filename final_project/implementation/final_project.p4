@@ -6,7 +6,7 @@ const bit<16> TYPE_IPV4  = 0x800;
 const bit<16> TYPE_PROBE = 0x812;
 
 #define MAX_HOPS 256  
-#define MAX_PORTS 65536 
+#define MAX_PORTS 512 
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -40,7 +40,7 @@ header ipv4_t {
 
 // Routing label, indicate the egress port at each switch
 header routing_label_t {
-    bit<8>   egress_spec;
+    egressSpec_t   egress_spec;
     bit<1>  bos;
 }
 
@@ -53,16 +53,16 @@ header counter_t {
 // Probe data header, store telemetry data from each hop
 // The data added to the stack by each switch at each hop.
 header probe_data_t {
-    bit<1>    bos;
-    bit<8>    switch_id;
-    bit<16>   rule_id;
-    bit<16>   in_port;
-    bit<16>   out_port;
+    bit<1>          bos;
+    bit<8>          switch_id;
+    bit<16>         rule_id;
+    egressSpec_t   in_port;
+    egressSpec_t   out_port;
 }
 
 
 struct metadata {
-    bit<8> egress_spec;
+    egressSpec_t egress_spec;
 }
 
 struct headers {

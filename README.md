@@ -9,9 +9,9 @@
 ```
 - `routing_label_stack`: Store source routing label
   - include:
-    - out port: 16 bits
+    - egress_spec: 9 bits
     - bos: bottom of stacks, 1 bit
-  - total: N * 17 bits
+  - total: N * 10 bits
 
 - `counter`: 
   - `visited_count`: Store how many hops the probing packet has visited
@@ -21,15 +21,15 @@
   - include:
     - switch ID: 8 bits
     - rule ID: 16 bits
-    - in port: 16 bits
-    - out port: 16 bits
+    - in port: 9 bits
+    - out port: 9 bits
     - bos: bottom of stack, 1 bit
 
-## datail packet format
+## datail packet format:w
+
 ```c=
 #define MAX_HOPS 256  
-#define MAX_PORTS 65536 
-
+#define MAX_PORTS 512 
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
@@ -58,7 +58,7 @@ header ipv4_t {
 
 // Routing label, indicate the egress port at each switch
 header routing_label_t {
-    bit<8>   egress_spec;
+    egressSpec_t   egress_spec;
     bit<1>  bos;
 }
 
@@ -71,16 +71,16 @@ header counter_t {
 // Probe data header, store telemetry data from each hop
 // The data added to the stack by each switch at each hop.
 header probe_data_t {
-    bit<1>    bos;
-    bit<8>    switch_id;
-    bit<16>   rule_id;
-    bit<16>   in_port;
-    bit<16>   out_port;
+    bit<1>          bos;
+    bit<8>          switch_id;
+    bit<16>         rule_id;
+    egressSpec_t   in_port;
+    egressSpec_t   out_port;
 }
 
 
 struct metadata {
-    bit<8> egress_spec;
+    egressSpec_t egress_spec;
 }
 
 struct headers {
