@@ -28,12 +28,12 @@
 ## datail packet format
 ```c=
 #define MAX_HOPS 256  
-#define MAX_PORTS 128
+#define MAX_PORTS 128 
 
 typedef bit<7>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<16> ruleId_t;
+typedef bit<17> ruleId_t;
 
 
 header ethernet_t {
@@ -74,7 +74,7 @@ header counter_t {
 header probe_data_t {
     bit<1>          bos;
     bit<8>          switch_id;
-    bit<17>         rule_id;
+    ruleId_t         rule_id;
     egressSpec_t   in_port;
     egressSpec_t   out_port;
 }

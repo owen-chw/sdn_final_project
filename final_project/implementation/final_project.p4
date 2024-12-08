@@ -15,7 +15,7 @@ const bit<16> TYPE_PROBE = 0x812;
 typedef bit<7>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<16> ruleId_t;
+typedef bit<17> ruleId_t;
 
 
 header ethernet_t {
@@ -56,7 +56,7 @@ header counter_t {
 header probe_data_t {
     bit<1>          bos;
     bit<8>          switch_id;
-    bit<17>         rule_id;
+    ruleId_t         rule_id;
     egressSpec_t   in_port;
     egressSpec_t   out_port;
 }
@@ -150,7 +150,7 @@ control MyIngress(inout headers hdr,
     }
 
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port, ruleId_t rule_id) {
-        standard_metadata.egress_spec = port;
+        standard_metadata.egress_spec = (bit<9>)port;
         meta.rule_id = rule_id;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
@@ -186,7 +186,7 @@ control MyIngress(inout headers hdr,
 
     //(3) for source_routing
     action srcRoute_forward(){
-        standard_metadata.egress_spec = hdr.routing_label_stack[0].egress_spec;
+        standard_metadata.egress_spec = (bit<9>)hdr.routing_label_stack[0].egress_spec;
         hdr.routing_label_stack.pop_front(1);
     }
 
@@ -209,10 +209,17 @@ control MyIngress(inout headers hdr,
             }
             swid.apply();
             hdr.probe_data_stack[0].rule_id = meta.rule_id;
-            hdr.probe_data_stack[0].in_port = standard_metadata.ingress_port;
-            hdr.probe_data_stack[0].out_port = standard_metadata.egress_spec;
+            hdr.probe_data_stack[0].in_port = (bit<7>)standard_metadata.ingress_port;
+            hdr.probe_data_stack[0].out_port = (bit<7>)standard_metadata.egress_spec;
             hdr.counter.visited_count =  hdr.counter.visited_count + 1;
-            //TODO: source routing
+            
+            //(3) source routing
+            if (hdr.routing_label_stack[0].isValid()){
+                srcRoute_forward();
+            }else{
+                drop();
+            }
+
 
         }
     }
@@ -226,44 +233,8 @@ control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
 
-    // count the number of bytes seen since the last probe
-    register<bit<32>>(MAX_PORTS) byte_cnt_reg;
-    // remember the time of the last probe
-    register<time_t>(MAX_PORTS) last_time_reg;
-
-    
-
     apply {
-        bit<32> byte_cnt;
-        bit<32> new_byte_cnt;
-        time_t last_time;
-        time_t cur_time = standard_metadata.egress_global_timestamp;
-        // increment byte cnt for this packet's port
-        byte_cnt_reg.read(byte_cnt, (bit<32>)standard_metadata.egress_port);
-        byte_cnt = byte_cnt + standard_metadata.packet_length;
-        // reset the byte count when a probe packet passes through
-        new_byte_cnt = (hdr.probe_data_stack[0].isValid()) ? 0 : byte_cnt;
-        byte_cnt_reg.write((bit<32>)standard_metadata.egress_port, new_byte_cnt);
 
-        if (hdr.probe_data_stack[0].isValid()) {
-            // fill out probe fields
-            
-            // The probe_data is pushed in the Ingress part.
-            
-            // set switch ID field
-            // swid.apply(); // applied in Ingress
-            
-            // TODO: fill out the rest of the probe packet fields
-            hdr.probe_data_stack[0].in_port = standard_metadata.ingress_port;
-            hdr.probe_data_stack[0].out_port = standard_metadata.egress_spec;
-            hdr.probe_data_stack[0].rule_id = meta.rule_id;
-            // hdr.probe_data[0].byte_cnt = ...
-            // TODO: read / update the last_time_reg
-            // last_time_reg.read(<val>, <index>);
-            // last_time_reg.write(<index>, <val>);
-            // hdr.probe_data[0].last_time = ...
-            // hdr.probe_data[0].cur_time = ...
-        }
     }
 }
 
@@ -298,8 +269,10 @@ control MyComputeChecksum(inout headers  hdr, inout metadata meta) {
 control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
-        packet.emit(hdr.ipv4);
+        packet.emit(hdr.routing_label_stack);
+        packet.emit(hdr.counter);
         packet.emit(hdr.probe_data_stack);
+        packet.emit(hdr.ipv4);
     }
 }
 
