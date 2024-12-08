@@ -3,7 +3,7 @@ from scapy.all import *
 TYPE_PROBE = 0x812
 
 class RoutingLabel(Packet):
-   fields_desc = [ BitField("egress_spec", 0, 9),
+   fields_desc = [ BitField("egress_spec", 0, 7),
                    BitField("bos", 0, 1)]
 
 class Counter(Packet):
@@ -12,9 +12,9 @@ class Counter(Packet):
 class ProbeData(Packet):
    fields_desc = [ BitField("bos", 0, 1),
                    ByteField("switch_id", 0),
-                   ShortField("rule_id", 0),
-                   BitField("in_port", 0, 9),
-                   BitField("out_port", 0, 9)]
+                   BitField("rule_id", 0, 17),
+                   BitField("in_port", 0, 7),
+                   BitField("out_port", 0, 7)]
    
 
 bind_layers(Ether, RoutingLabel, type=TYPE_PROBE)
