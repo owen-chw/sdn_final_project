@@ -15,6 +15,7 @@ const bit<16> TYPE_PROBE = 0x812;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
+typedef bit<16> ruleId_t;
 
 
 header ethernet_t {
@@ -62,7 +63,7 @@ header probe_data_t {
 
 
 struct metadata {
-    egressSpec_t egress_spec;
+    ruleId_t rule_id;
 }
 
 struct headers {
@@ -143,12 +144,14 @@ control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
 
+    //(1) for ipv4 forwarding table
     action drop() {
         mark_to_drop(standard_metadata);
     }
 
-    action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
+    action ipv4_forward(macAddr_t dstAddr, egressSpec_t port, ruleId_t rule_id) {
         standard_metadata.egress_spec = port;
+        meta.rule_id = rule_id;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
@@ -167,13 +170,40 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
+    //(2) for probe data
+    //(2-1) for switch_id setting table
+    action set_swid(bit<8> swid){
+        hdr.probe_data_stack[0].switch_id = swid;
+    }
+
+    table swid{
+        actions = {
+            set_swid;
+            NoAction;
+        }
+        default_action = NoAction;
+    }
+
+    //(3) for source_routing
+    action srcRoute_forward(){
+        standard_metadata.egress_spec = hdr.routing_label_stack[0].egress_spec;
+        hdr.routing_label_stack.pop_front(1);
+    }
+
+
     apply {
+        //(1) apply ipv4 forwarding
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
-        else if (hdr.probe.isValid()) {
-            standard_metadata.egress_spec = (bit<9>)meta.egress_spec;
-            hdr.probe.hop_cnt = hdr.probe.hop_cnt + 1;
+
+        //(2) fill out probe data
+        if (hdr.counter.isValid()) {
+            hdr.probe_data_stack.push_front(1);
+            hdr.probe_data_stack[0].setValid();
+            hdr.counter.visited_count =  hdr.counter.visited_count + 1;
+            //TODO: refer to link_monitor L230
+
         }
     }
 }
