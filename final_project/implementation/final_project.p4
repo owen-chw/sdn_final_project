@@ -208,8 +208,11 @@ control MyIngress(inout headers hdr,
                 hdr.probe_data_stack[0].bos = 0;
             }
             swid.apply();
+            hdr.probe_data_stack[0].rule_id = meta.rule_id;
+            hdr.probe_data_stack[0].in_port = standard_metadata.ingress_port;
+            hdr.probe_data_stack[0].out_port = standard_metadata.egress_spec;
             hdr.counter.visited_count =  hdr.counter.visited_count + 1;
-            //TODO: refer to link_monitor L230
+            //TODO: source routing
 
         }
     }

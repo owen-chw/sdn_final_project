@@ -19,13 +19,13 @@
 
 - `probe_data_stack`: Stack to Store telemetry data from each hop
   - include:
+    - bos: bottom of stack, 1 bit
     - switch ID: 8 bits
     - rule ID: 17 bits
     - in port: 7 bits
     - out port: 7 bits
-    - bos: bottom of stack, 1 bit
 
-## datail packet format:w
+## datail packet format
 ```c=
 #define MAX_HOPS 256  
 #define MAX_PORTS 128
