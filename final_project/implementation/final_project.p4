@@ -16,6 +16,7 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 typedef bit<16> ruleId_t;
+typedef bit<48> time_t;
 
 
 header ethernet_t {
@@ -201,6 +202,13 @@ control MyIngress(inout headers hdr,
         if (hdr.counter.isValid()) {
             hdr.probe_data_stack.push_front(1);
             hdr.probe_data_stack[0].setValid();
+            if (hdr.counter.visited_count == 0) {
+                hdr.probe_data_stack[0].bos = 1;
+            }
+            else {
+                hdr.probe_data_stack[0].bos = 0;
+            }
+            swid.apply();
             hdr.counter.visited_count =  hdr.counter.visited_count + 1;
             //TODO: refer to link_monitor L230
 
@@ -221,17 +229,7 @@ control MyEgress(inout headers hdr,
     // remember the time of the last probe
     register<time_t>(MAX_PORTS) last_time_reg;
 
-    action set_swid(bit<7> swid) {
-        hdr.probe_data[0].swid = swid;
-    }
-
-    table swid {
-        actions = {
-            set_swid;
-            NoAction;
-        }
-        default_action = NoAction();
-    }
+    
 
     apply {
         bit<32> byte_cnt;
@@ -242,23 +240,21 @@ control MyEgress(inout headers hdr,
         byte_cnt_reg.read(byte_cnt, (bit<32>)standard_metadata.egress_port);
         byte_cnt = byte_cnt + standard_metadata.packet_length;
         // reset the byte count when a probe packet passes through
-        new_byte_cnt = (hdr.probe.isValid()) ? 0 : byte_cnt;
+        new_byte_cnt = (hdr.probe_data_stack[0].isValid()) ? 0 : byte_cnt;
         byte_cnt_reg.write((bit<32>)standard_metadata.egress_port, new_byte_cnt);
 
-        if (hdr.probe.isValid()) {
+        if (hdr.probe_data_stack[0].isValid()) {
             // fill out probe fields
-            hdr.probe_data.push_front(1);
-            hdr.probe_data[0].setValid();
-            if (hdr.probe.hop_cnt == 1) {
-                hdr.probe_data[0].bos = 1;
-            }
-            else {
-                hdr.probe_data[0].bos = 0;
-            }
+            
+            // The probe_data is pushed in the Ingress part.
+            
             // set switch ID field
-            swid.apply();
+            // swid.apply(); // applied in Ingress
+            
             // TODO: fill out the rest of the probe packet fields
-            // hdr.probe_data[0].port = ...
+            hdr.probe_data_stack[0].in_port = standard_metadata.ingress_port;
+            hdr.probe_data_stack[0].out_port = standard_metadata.egress_spec;
+            hdr.probe_data_stack[0].rule_id = meta.rule_id;
             // hdr.probe_data[0].byte_cnt = ...
             // TODO: read / update the last_time_reg
             // last_time_reg.read(<val>, <index>);
@@ -301,9 +297,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
-        packet.emit(hdr.probe);
-        packet.emit(hdr.probe_data);
-        packet.emit(hdr.probe_fwd);
+        packet.emit(hdr.probe_data_stack);
     }
 }
 
