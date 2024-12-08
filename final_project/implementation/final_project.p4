@@ -6,17 +6,16 @@ const bit<16> TYPE_IPV4  = 0x800;
 const bit<16> TYPE_PROBE = 0x812;
 
 #define MAX_HOPS 256  
-#define MAX_PORTS 512 
+#define MAX_PORTS 128 
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
 
-typedef bit<9>  egressSpec_t;
+typedef bit<7>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 typedef bit<16> ruleId_t;
-typedef bit<48> time_t;
 
 
 header ethernet_t {
@@ -57,7 +56,7 @@ header counter_t {
 header probe_data_t {
     bit<1>          bos;
     bit<8>          switch_id;
-    bit<16>         rule_id;
+    bit<17>         rule_id;
     egressSpec_t   in_port;
     egressSpec_t   out_port;
 }
