@@ -11,10 +11,11 @@ class Counter(Packet):
 
 class ProbeData(Packet):
    fields_desc = [ BitField("bos", 0, 1),
-                   ByteField("switch_id", 0),
-                   BitField("rule_id", 0, 17),
-                   BitField("in_port", 0, 7),
-                   BitField("out_port", 0, 7)]
+                   BitField("switch_id", 0, 7),
+                   ByteField("port", 0),
+                   BitField("byte_cnt", 0, 32),
+                   BitField("last_time", 0, 48),
+                   BitField("cur_time", 0, 48)]
    
 
 bind_layers(Ether, RoutingLabel, type=TYPE_PROBE)
