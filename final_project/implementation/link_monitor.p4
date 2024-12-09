@@ -216,6 +216,7 @@ control MyIngress(inout headers hdr,
             //(3) source routing
             if (hdr.routing_label_stack[0].isValid()){
                 srcRoute_forward();
+                log_msg("878787878");
             }else{
                 drop();
             }
