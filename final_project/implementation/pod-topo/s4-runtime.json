@@ -4,9 +4,9 @@
   "bmv2_json": "build/link_monitor.json",
   "table_entries": [
     {
-      "table": "MyEgress.swid",
+      "table": "MyIngress.swid",
       "default_action": true,
-      "action_name": "MyEgress.set_swid",
+      "action_name": "MyIngress.set_swid",
       "action_params": {
          "swid": 4
        }
@@ -25,7 +25,8 @@
       "action_name": "MyIngress.ipv4_forward",
       "action_params": {
         "dstAddr": "08:00:00:00:01:00",
-        "port": 2
+        "port": 2,
+        "rule_id": 1
       }
     },
     {
@@ -36,7 +37,8 @@
       "action_name": "MyIngress.ipv4_forward",
       "action_params": {
         "dstAddr": "08:00:00:00:01:00",
-        "port": 2
+        "port": 2,
+        "rule_id": 2
       }
     },
     {
@@ -47,7 +49,8 @@
       "action_name": "MyIngress.ipv4_forward",
       "action_params": {
         "dstAddr": "08:00:00:00:02:00",
-        "port": 1
+        "port": 1,
+        "rule_id": 3
       }
     },
     {
@@ -58,7 +61,8 @@
       "action_name": "MyIngress.ipv4_forward",
       "action_params": {
         "dstAddr": "08:00:00:00:02:00",
-        "port": 1
+        "port": 1,
+        "rule_id":4
       }
     }
   ]
