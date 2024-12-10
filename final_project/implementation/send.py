@@ -6,6 +6,13 @@ from scapy.all import *
 
 from probe_hdrs import *
 
+bind_layers(Ether, RoutingLabel, type=TYPE_PROBE)
+bind_layers(RoutingLabel, RoutingLabel, bos=0)
+bind_layers(RoutingLabel, Counter, bos=1)
+bind_layers(Counter, IP, visited_count=0)
+bind_layers(Counter, ProbeData)
+bind_layers(ProbeData, ProbeData, bos=0)
+bind_layers(ProbeData, IP, bos=1)
 
 def get_if():
     ifs=get_if_list()
